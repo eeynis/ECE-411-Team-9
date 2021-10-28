@@ -1,0 +1,46 @@
+//#include <Wire.h>
+//#include <Adafruit_GFX.h>
+//#include <Adafruit_SSD1306.h>
+
+//#define OLED_RESET 4
+//Adafruit_SSD1306 display(OLED_RESET);
+//#define SCREEN_ADDRESS 0x3C
+
+void setup() {
+  // put your setup code here, to run once:
+//Wire.begin();
+
+//display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  
+DDRD=B00001100;
+}
+
+int T = 50;
+
+int F = 1/((T*(10^(-6)))*2);
+
+//void displayFrequency(){
+//display.clearDisplay();
+
+//display.setTextColor(WHITE);
+
+//display.setTextSize(1);
+
+//display.setCursor(0,0);
+
+//display.print("Frequency: ");
+//display.print(F);
+//display.print(" Hz");
+
+//display.display();
+//}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  while(true){
+PORTD = B00001100;
+delayMicroseconds(T);
+PORTD = B00000000;
+delayMicroseconds(T);
+  }
+}
