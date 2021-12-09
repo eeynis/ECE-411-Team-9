@@ -1,46 +1,125 @@
-//#include <Wire.h>
-//#include <Adafruit_GFX.h>
-//#include <Adafruit_SSD1306.h>
+#include <PWM.h> //PWM librarey for controlling freq. of PWM signal
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
-//#define OLED_RESET 4
-//Adafruit_SSD1306 display(OLED_RESET);
-//#define SCREEN_ADDRESS 0x3C
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+int Encoder_OuputA  = 11;
+int Encoder_OuputB  = 12;
+int Encoder_Switch = 10;
+int Previous_Output;
+int multiplier = 1;
+
+double angle = 0;
+double increment = 0.2;
+
+const int signal_pin = 9;        
+int32_t lower_level_freq = 100; //Lowest possible freq value is 100Hz
+int32_t upper_level_freq = 25000; //Maximum possible freq is 25KHz
+int32_t frequency = lower_level_freq; //frequency to be set
+
+
 
 void setup() {
-  // put your setup code here, to run once:
-//Wire.begin();
+Wire.begin();
 
-//display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  
-DDRD=B00001100;
+display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+
+//pin Mode declaration 
+  pinMode (Encoder_OuputA, INPUT);
+  pinMode (Encoder_OuputB, INPUT);
+  pinMode (Encoder_Switch, INPUT);
+
+  Previous_Output = digitalRead(Encoder_OuputA); //Read the inital value of Output A
+
+  display.clearDisplay();
+
+  display.setTextColor(WHITE);
+
+display.setTextSize(1);
+
+display.setCursor(15,30);
+display.print("ECE411 Team 9");
+
+
+display.setCursor(30,40);
+display.print("SSG V1.0");
+
+display.display();
+
+delay(5000);
+
+  display.clearDisplay();
+  display.setCursor(15,30);
+display.print("Step Size: ");
+display.print(multiplier);
+
+display.display();
+
+
+Serial.begin(9600);
+InitTimersSafe();
+
 }
-
-int T = 50;
-
-int F = 1/((T*(10^(-6)))*2);
-
-//void displayFrequency(){
-//display.clearDisplay();
-
-//display.setTextColor(WHITE);
-
-//display.setTextSize(1);
-
-//display.setCursor(0,0);
-
-//display.print("Frequency: ");
-//display.print(F);
-//display.print(" Hz");
-
-//display.display();
-//}
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  while(true){
-PORTD = B00001100;
-delayMicroseconds(T);
-PORTD = B00000000;
-delayMicroseconds(T);
-  }
+
+  if (digitalRead(Encoder_OuputA) != Previous_Output)
+   { 
+     if (digitalRead(Encoder_OuputB) != Previous_Output) 
+     {
+      if (frequency > upper_level_freq) 
+      {
+       frequency = upper_level_freq;
+      }
+      else 
+       frequency = frequency + multiplier;
+       pwmWriteHR(signal_pin, 32768); //Set duty cycle to 50% by default -> for 16-bit 65536/2 = 32768
+       SetPinFrequencySafe(signal_pin, frequency);
+     } 
+     else 
+     {
+      if (frequency < lower_level_freq) 
+      {
+       frequency = lower_level_freq;
+      }
+      else 
+       frequency = frequency - multiplier;
+       pwmWriteHR(signal_pin, 32768); //Set duty cycle to 50% by default -> for 16-bit 65536/2 = 32768
+       SetPinFrequencySafe(signal_pin, frequency);
+     }
+   }
+
+      if (digitalRead(Encoder_Switch) == 0)
+   {
+   multiplier = multiplier * 10;
+
+   if (multiplier>1000)
+   multiplier=1;
+   
+  // Serial.println(multiplier);
+
+  display.clearDisplay();
+  display.setCursor(15,30);
+display.print("Step Size: ");
+display.print(multiplier);
+
+display.display();
+   
+   delay(500);
+   while(digitalRead(Encoder_Switch) == 0);
+   }
+
+   Previous_Output = digitalRead(Encoder_OuputA);  
+
+   Serial.println(frequency);
+ 
 }
+
